@@ -4,12 +4,12 @@ package bimap
 
 // BiMap represents bidirectional map that has unique sets of keys and values
 type BiMap[K comparable, V comparable] struct {
-	keys   []K
-	vals   []V
-	keyIdx map[K]int
-	valIdx map[V]int
-	noKey  K
-	noVal  V
+	keys    []K
+	vals    []V
+	keyIdx  map[K]int
+	valIdx  map[V]int
+	zeroKey K
+	zeroVal V
 }
 
 type BiMapIterator[K comparable, V comparable] struct {
@@ -80,7 +80,7 @@ func (biMap *BiMap[K, V]) GetValue(key K) (V, bool) {
 	if i, ok := biMap.keyIdx[key]; ok {
 		return biMap.vals[i], true
 	}
-	return biMap.noVal, false
+	return biMap.zeroVal, false
 }
 
 // Gets key by the value
@@ -91,7 +91,7 @@ func (biMap *BiMap[K, V]) GetKey(val V) (K, bool) {
 	if i, ok := biMap.valIdx[val]; ok {
 		return biMap.keys[i], true
 	}
-	return biMap.noKey, false
+	return biMap.zeroKey, false
 }
 
 // Checks if the key is present in the map
@@ -153,7 +153,7 @@ func (biMap *BiMap[K, V]) Inverse() *BiMap[V, K] {
 	return &invMap
 }
 
-func cmpSlices[T comparable](a []T, b []T) bool {
+func cmpSlices[T comparable](a, b []T) bool {
 	if len(a) != len(b) {
 		return false
 	}
@@ -205,7 +205,7 @@ func (it *BiMapIterator[K, V]) HasNext() bool {
 }
 
 // Provides next available bi-map entry
-func (it *BiMapIterator[K, V]) Next() (K, V) {
+func (it *BiMapIterator[K, V]) Next() (k K, v V) {
 	oldIdx := it.idx
 	it.idx++
 	return it.biMap.keys[oldIdx], it.biMap.vals[oldIdx]

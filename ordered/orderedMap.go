@@ -38,12 +38,32 @@ func (om *OrderedMap[K, V]) Get(key K) (V, bool) {
 	return value, ok
 }
 
-// Associates the specified value with the specified key
+// Associates the specified value with the specified key.
 func (om *OrderedMap[K, V]) Put(key K, value V) {
 	if _, ok := om.backMap[key]; !ok {
 		om.orderedKeys = append(om.orderedKeys, key)
 	}
 	om.backMap[key] = value
+}
+
+// Copies all of the mappings from the specified map to this map.
+func (om *OrderedMap[K, V]) PutAll(other *OrderedMap[K, V]) {
+	for _, key := range other.orderedKeys {
+		om.Put(key, other.backMap[key])
+	}
+}
+
+// Removes the mapping for the specified key from this map if present.
+func (om *OrderedMap[K, V]) Remove(key K) {
+	if _, ok := om.backMap[key]; ok {
+		delete(om.backMap, key)
+		for i, k := range om.orderedKeys {
+			if k == key {
+				om.orderedKeys = append(om.orderedKeys[:i], om.orderedKeys[i+1:]...)
+				break
+			}
+		}
+	}
 }
 
 // Computes value for the specified key. If key is not present, compute function received "zero" value.
@@ -73,7 +93,7 @@ func (it *orderedMapIterator[K, V]) HasNext() bool {
 }
 
 // Returns the next key-value pair.
-func (it *orderedMapIterator[K, V]) Next() (K, V) {
+func (it *orderedMapIterator[K, V]) Next() (k K, v V) {
 	key := it.om.orderedKeys[it.idx]
 	value := it.om.backMap[key]
 	it.idx++
