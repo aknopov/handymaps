@@ -1,0 +1,24 @@
+linters-settings:
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - style
+      - performance
+      - experimental
+      - opinionated
+
+linters:
+  enable:
+    - cyclop
+    - errcheck
+    - gocritic
+    - gofmt
+    - gosimple
+    - govet
+    - misspell
+    - prealloc
+    - staticcheck
+    - unparam
+    - unused
+    - whitespace
+      
