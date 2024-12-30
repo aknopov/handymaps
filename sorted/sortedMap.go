@@ -55,7 +55,7 @@ func (sm *SortedMap[K, V]) Put(key K, value V) {
 
 // Copies all of the mappings from the specified map to this map.
 func (sm *SortedMap[K, V]) PutAll(other *SortedMap[K, V]) {
-	for _, key := range other.sortedKeys { // UC binary search
+	for _, key := range other.sortedKeys {
 		if _, ok := sm.backMap[key]; !ok {
 			sm.sortedKeys = append(sm.sortedKeys, key)
 		}
@@ -70,11 +70,8 @@ func (sm *SortedMap[K, V]) PutAll(other *SortedMap[K, V]) {
 func (sm *SortedMap[K, V]) Remove(key K) {
 	if _, ok := sm.backMap[key]; ok {
 		delete(sm.backMap, key)
-		for i, k := range sm.sortedKeys { // UC binary search
-			if k == key {
-				sm.sortedKeys = append(sm.sortedKeys[:i], sm.sortedKeys[i+1:]...)
-				break
-			}
+		if i := binSearch(sm.sortedKeys, key, sm.isLess); i >= 0 {
+			sm.sortedKeys = append(sm.sortedKeys[:i], sm.sortedKeys[i+1:]...)
 		}
 	}
 }
@@ -111,4 +108,22 @@ func (it *SortedMapIterator[K, V]) Next() (k K, v V) {
 	value := it.sm.backMap[key]
 	it.idx++
 	return key, value
+}
+
+// Returns index of "key" in the "slice" if found. If key is not found, returns negative value X,
+// such that -X-1 is the index of the largest element less than "key" (aka insertion point).
+func binSearch[K comparable](slice []K, key K, isLess func(K, K) bool) int {
+	low, high := 0, len(slice)
+	for low < high {
+		mid := (low + high) / 2
+		if slice[mid] == key {
+			return mid
+		}
+		if isLess(slice[mid], key) {
+			low = mid + 1
+		} else {
+			high = mid
+		}
+	}
+	return -low - 1
 }

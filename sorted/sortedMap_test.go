@@ -7,8 +7,8 @@ import (
 )
 
 var (
-	keys        = []string{"a", "c", "b", "z", "y"}
-	sorted_keys = []string{"a", "b", "c", "y", "z"}
+	keys        = []string{"a", "c", "b", "z", "x"}
+	sorted_keys = []string{"a", "b", "c", "x", "z"}
 )
 
 func isStringLess(x, y string) bool {
@@ -99,12 +99,13 @@ func TestSortedMapPutAll(t *testing.T) {
 	assertT := assert.New(t)
 
 	sm1 := NewSortedMap[string, int](isStringLess)
-	sm2 := NewSortedMap[string, int](isStringLess)
 	sm1.Put("a", 1)
 	sm1.Put("c", 2)
 	sm1.Put("b", 3)
+	sm2 := NewSortedMap[string, int](isStringLess)
+	sm2.Put("a", 0)
 
-	assertT.Equal(0, sm2.Len())
+	assertT.Equal(1, sm2.Len())
 	sm2.PutAll(sm1)
 	assertT.Equal(3, sm2.Len())
 	val, ok := sm2.Get("a")
@@ -139,4 +140,19 @@ func TestSortedMapRemove(t *testing.T) {
 	assertT.True(ok)
 	_, ok = sm.Get("c")
 	assertT.True(ok)
+}
+
+func TestBinSearch(t *testing.T) {
+	assertT := assert.New(t)
+
+	assertT.Equal(0, binSearch(sorted_keys, "a", isStringLess))
+	assertT.Equal(1, binSearch(sorted_keys, "b", isStringLess))
+	assertT.Equal(2, binSearch(sorted_keys, "c", isStringLess))
+	assertT.Equal(3, binSearch(sorted_keys, "x", isStringLess))
+	assertT.Equal(4, binSearch(sorted_keys, "z", isStringLess))
+
+	assertT.Equal(-4, binSearch(sorted_keys, "k", isStringLess))
+	assertT.Equal(-5, binSearch(sorted_keys, "y", isStringLess))
+	assertT.Equal(-1, binSearch(sorted_keys, "A", isStringLess))
+	assertT.Equal(-6, binSearch(sorted_keys, "|", isStringLess))
 }
