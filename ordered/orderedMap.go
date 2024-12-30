@@ -6,15 +6,17 @@ package ordered
 type OrderedMap[K comparable, V any] struct {
 	backMap     map[K]V
 	orderedKeys []K
-	zero        V
+	zeroVal     V
 }
 
-type orderedMapIterator[K comparable, V any] struct {
+// OrderedMap iterator
+type OrderedMapIterator[K comparable, V any] struct {
 	om  *OrderedMap[K, V]
 	idx int
 }
 
 // Creates ordered map with the specified capacity.
+//   - capacity - initial capacity
 func NewOrderedMapEx[K comparable, V any](capacity int) *OrderedMap[K, V] {
 	return &OrderedMap[K, V]{
 		backMap:     make(map[K]V, capacity),
@@ -22,7 +24,7 @@ func NewOrderedMapEx[K comparable, V any](capacity int) *OrderedMap[K, V] {
 	}
 }
 
-// Creates ordered map with the default capacity.
+// Creates zero-sized ordered map.
 func NewOrderedMap[K comparable, V any]() *OrderedMap[K, V] {
 	return NewOrderedMapEx[K, V](0)
 }
@@ -70,7 +72,7 @@ func (om *OrderedMap[K, V]) Remove(key K) {
 func (om *OrderedMap[K, V]) Compute(key K, compute func(K, V) V) V {
 	value, ok := om.backMap[key]
 	if !ok {
-		value = om.zero
+		value = om.zeroVal
 	}
 	value = compute(key, value)
 	om.Put(key, value)
@@ -82,18 +84,18 @@ func (om *OrderedMap[K, V]) Keys() []K {
 	return om.orderedKeys
 }
 
-// Creates oterator for the map.
-func (om *OrderedMap[K, V]) Iterator() *orderedMapIterator[K, V] {
-	return &orderedMapIterator[K, V]{om: om, idx: 0}
+// Creates iterator for the map.
+func (om *OrderedMap[K, V]) Iterator() *OrderedMapIterator[K, V] {
+	return &OrderedMapIterator[K, V]{om: om, idx: 0}
 }
 
 // Checks if there are more elements to iterate.
-func (it *orderedMapIterator[K, V]) HasNext() bool {
+func (it *OrderedMapIterator[K, V]) HasNext() bool {
 	return it.idx < len(it.om.orderedKeys)
 }
 
 // Returns the next key-value pair.
-func (it *orderedMapIterator[K, V]) Next() (k K, v V) {
+func (it *OrderedMapIterator[K, V]) Next() (k K, v V) {
 	key := it.om.orderedKeys[it.idx]
 	value := it.om.backMap[key]
 	it.idx++

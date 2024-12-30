@@ -12,6 +12,7 @@ type BiMap[K comparable, V comparable] struct {
 	zeroVal V
 }
 
+// BiMapIterator provides iterator over BiMap entries
 type BiMapIterator[K comparable, V comparable] struct {
 	biMap *BiMap[K, V]
 	idx   int
