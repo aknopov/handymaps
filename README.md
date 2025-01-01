@@ -1,6 +1,6 @@
 # Handy Maps
 
-repository contains a number of map collections extending standard implementation
+Library contains a number of map collections extending standard implementation
 
 ## BiMap
 
