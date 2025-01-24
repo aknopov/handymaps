@@ -174,3 +174,31 @@ func TestIterator(t *testing.T) {
 
 	assertPanic(t, "No panic?", func() { it.Next() })
 }
+
+const nCount = 1000
+
+func BenchmarkBiMapPut(b *testing.B) {
+	aMap := NewBiMapEx[int, int](nCount)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		k := i % nCount
+		aMap.Put(k, k)
+	}
+}
+
+func BenchmarkBiMapIteration(b *testing.B) {
+	aMap := NewBiMapEx[int, int](nCount)
+
+	for i := 0; i < nCount; i++ {
+		aMap.Put(i, i)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		it := aMap.Iterator()
+		for it.HasNext() {
+			it.Next()
+		}
+	}
+}
