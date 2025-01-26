@@ -1,8 +1,8 @@
 package expiry
 
 func (em *ExpiryMap[K, V]) notifyListeners(ev EventType, key K, val V, err error) {
-	for _, l := range em.listeners {
-		l.Listen(ev, key, val, err)
+	for f := range em.listeners.m {
+		f.Listen(ev, key, val, err)
 	}
 }
 
@@ -10,7 +10,7 @@ func (em *ExpiryMap[K, V]) notifyListeners(ev EventType, key K, val V, err error
 func (em *ExpiryMap[K, V]) Get(key K) (V, error) {
 	var err error
 	var val V
-	em.DoAtomically(func() {
+	em.doAtomically(func() {
 		if _, ok := em.backMap[key]; !ok {
 			val, err = em.loader(key)
 			if err == nil {
@@ -50,7 +50,7 @@ func (em *ExpiryMap[K, V]) ContainsKey(key K) bool {
 //   - return `true` if value was replaced
 func (em *ExpiryMap[K, V]) Replace(key K, val V) bool {
 	var ok bool
-	em.DoAtomically(func() {
+	em.doAtomically(func() {
 		if _, ok = em.backMap[key]; ok {
 			em.backMap[key] = val
 			em.notifyListeners(Updated, key, val, nil)
@@ -65,11 +65,19 @@ func (em *ExpiryMap[K, V]) Replace(key K, val V) bool {
 //   - return `true` if value was removed
 func (em *ExpiryMap[K, V]) Remove(key K, val V) bool {
 	var ok bool
-	em.DoAtomically(func() {
+	em.doAtomically(func() {
 		if _, ok = em.backMap[key]; ok {
 			delete(em.backMap, key)
 			// UC What to do with timer job?
 		}
 	})
 	return ok
+}
+
+// Clears the cache.
+func (em *ExpiryMap[K, V]) Clear() {
+	em.doAtomically(func() {
+		em.backMap = make(map[K]V)
+		// UC What to do with timer jobs?
+	})
 }

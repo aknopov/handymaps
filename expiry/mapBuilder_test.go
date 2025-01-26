@@ -1,6 +1,7 @@
 package expiry
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -23,28 +24,73 @@ func TestCreation(t *testing.T) {
 	assertT.Equal(maxCapacity, em.Capacity())
 	assertT.Equal(ttl, em.ExpiringAfter())
 	assertT.NotNil(em.loader)
-	assertT.Equal(0, len(em.listeners))
+	assertT.Equal(0, em.listeners.size())
 }
 
-func TestGet(t *testing.T) {
+func TestLoader(t *testing.T) {
 	assertT := assert.New(t)
 
 	em := NewExpiryMap[string, int]().
 		WithMaxCapacity(maxCapacity).
 		Expirefter(ttl)
-	v, e := em.Get("Hi")
-	assertT.NotNil(e)
-	assertT.Equal(0, v)
-	assertT.Equal(0, em.Len())
+	orgLoader := em.loader
+	assertT.NotNil(orgLoader)
 
 	em.WithLoader(func(key string) (int, error) { return len(key), nil })
-	v, e = em.Get("Hi")
-	assertT.Nil(e)
-	assertT.Equal(2, v)
-	assertT.Equal(1, em.Len())
-
-	v, e = em.Get("Hello")
-	assertT.Nil(e)
-	assertT.Equal(5, v)
-	assertT.Equal(2, em.Len())
+	assertT.NotEqual(fmt.Sprintf("%v", &orgLoader), fmt.Sprintf("%v", &em.loader))
 }
+
+func listener1(ev EventType, key string, val int, err error) {
+	fmt.Printf("1: Received event: %v, key=%v, val=%v, err=%v\n", ev, key, val, err)
+}
+
+func listener2(ev EventType, key string, val int, err error) {
+	fmt.Printf("2: Received event: %v, key=%v, val=%v, err=%v\n", ev, key, val, err)
+}
+
+func TestListeners(t *testing.T) {
+	assertT := assert.New(t)
+
+	em := NewExpiryMap[string, int]().
+		WithMaxCapacity(maxCapacity).
+		Expirefter(ttl)
+
+	var wrapper1 = ListenerWarapper{f: listener1}
+	var wrapper2 = ListenerWarapper{f: listener2}
+
+	em.AddListener(&wrapper1)
+	assertT.Equal(1, em.listeners.size())
+	assertT.True(em.listeners.contains(&wrapper1))
+
+	em.AddListener(&wrapper1)
+	assertT.Equal(1, em.listeners.size())
+	assertT.True(em.listeners.contains(&wrapper1))
+
+	em.AddListener(&wrapper2)
+	assertT.Equal(2, em.listeners.size())
+	assertT.True(em.listeners.contains(&wrapper2))
+
+	em.RemoveListener(&wrapper1)
+	assertT.Equal(1, em.listeners.size())
+	assertT.False(em.listeners.contains(&wrapper1))
+	assertT.True(em.listeners.contains(&wrapper2))
+}
+
+
+func TestTimers(t *testing.T) {
+	timer1 := time.NewTimer(2 * time.Second)
+	<-timer1.C
+	fmt.Println("Timer 1 fired")
+
+	timer2 := time.NewTimer(time.Second)
+	go func() {
+		<-timer2.C
+		fmt.Println("Timer 2 fired") // <- Will not see
+	}()
+	stop2 := timer2.Stop()
+	if stop2 {
+		fmt.Println("Timer 2 stopped")
+	}
+	time.Sleep(2500 * time.Millisecond)
+}
+

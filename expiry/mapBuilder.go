@@ -12,9 +12,9 @@ type ExpiryMap[K comparable, V any] struct {
 	maxCapacity int
 	ttl         time.Duration
 	loader      func(key K) (V, error)
-	listeners   []Listener[K, V]
+	listeners   *set[Listener[K, V]]
 	zeroVal     V
-	Once
+	once
 }
 
 type EventType int
@@ -39,6 +39,15 @@ type Listener[K comparable, V any] interface {
 	Listen(ev EventType, key K, val V, err error)
 }
 
+// Convenience wrapper for Listener interface
+type ListenerWarapper struct {
+	f func(ev EventType, key string, val int, err error)
+}
+
+func (lw *ListenerWarapper) Listen(ev EventType, key string, val int, err error) {
+	lw.f(ev, key, val, err)
+}
+
 // Creates ExpiryMap with default field values - unlimited capacity without entries expiry
 func NewExpiryMap[K comparable, V any]() *ExpiryMap[K, V] {
 	var deflt V
@@ -47,14 +56,14 @@ func NewExpiryMap[K comparable, V any]() *ExpiryMap[K, V] {
 		maxCapacity: -1,
 		ttl:         1<<63 - 1,
 		loader:      func(key K) (V, error) { return deflt, errors.New("loader not defined") },
-		listeners:   make([]Listener[K, V], 0),
+		listeners:   newSet[Listener[K, V]](),
 	}
 	return &ret
 }
 
 // Modifies max capacity of the map. If adding new entry exceeds map capacity, the oldest entry is evicted.
 func (em *ExpiryMap[K, V]) WithMaxCapacity(maxCapacity int) *ExpiryMap[K, V] {
-	em.DoAtomically(func() {
+	em.doAtomically(func() {
 		em.maxCapacity = maxCapacity
 	})
 	return em
@@ -62,7 +71,7 @@ func (em *ExpiryMap[K, V]) WithMaxCapacity(maxCapacity int) *ExpiryMap[K, V] {
 
 // Modifes map entries time-to-live period
 func (em *ExpiryMap[K, V]) Expirefter(ttl time.Duration) *ExpiryMap[K, V] {
-	em.DoAtomically(func() {
+	em.doAtomically(func() {
 		em.ttl = ttl
 	})
 	return em
@@ -70,7 +79,7 @@ func (em *ExpiryMap[K, V]) Expirefter(ttl time.Duration) *ExpiryMap[K, V] {
 
 // Modifes map's loader that provides values for a new  key
 func (em *ExpiryMap[K, V]) WithLoader(loader func(key K) (V, error)) *ExpiryMap[K, V] {
-	em.DoAtomically(func() {
+	em.doAtomically(func() {
 		em.loader = loader
 	})
 	return em
@@ -78,20 +87,15 @@ func (em *ExpiryMap[K, V]) WithLoader(loader func(key K) (V, error)) *ExpiryMap[
 
 // Adds listener to ExpiryMap events. The listeners are executed in a synchronous mode in order of their insretion.
 func (em *ExpiryMap[K, V]) AddListener(listener Listener[K, V]) *ExpiryMap[K, V] {
-	em.DoAtomically(func() {
-		em.listeners = append(em.listeners, listener)
+	em.doAtomically(func() {
+		em.listeners.add(listener)
 	})
 	return em
 }
 
 func (em *ExpiryMap[K, V]) RemoveListener(listener Listener[K, V]) *ExpiryMap[K, V] {
-	em.DoAtomically(func() {
-		for i, l := range em.listeners {
-			if l == listener {
-				em.listeners = append(em.listeners[:i], em.listeners[i+1:]...)
-				break
-			}
-		}
+	em.doAtomically(func() {
+		em.listeners.remove(listener)
 	})
 	return em
 }
