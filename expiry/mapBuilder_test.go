@@ -76,7 +76,6 @@ func TestListeners(t *testing.T) {
 	assertT.True(em.listeners.contains(&wrapper2))
 }
 
-
 func TestTimers(t *testing.T) {
 	timer1 := time.NewTimer(2 * time.Second)
 	<-timer1.C
@@ -93,4 +92,3 @@ func TestTimers(t *testing.T) {
 	}
 	time.Sleep(2500 * time.Millisecond)
 }
-

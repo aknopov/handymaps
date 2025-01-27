@@ -30,7 +30,7 @@ func TestOnceAutoResetAsynchronous(t *testing.T) {
 
 	wg.Add(iters)
 	for i := 0; i < iters; i++ {
-		once.doAtomically(func() { defer wg.Done(); calls++ })
+		go once.doAtomically(func() { defer wg.Done(); calls++ })
 	}
 	wg.Wait()
 	assertT.Equal(iters, calls)

@@ -4,11 +4,13 @@ package expiry
 import (
 	"errors"
 	"time"
+
+	"github.com/aknopov/handymaps/ordered"
 )
 
 // Implementation of a map which entries expire after certain time.
 type ExpiryMap[K comparable, V any] struct {
-	backMap     map[K]V
+	backMap     ordered.OrderedMap[K, V]
 	maxCapacity int
 	ttl         time.Duration
 	loader      func(key K) (V, error)
@@ -21,12 +23,18 @@ type EventType int
 
 // ExpiryMap events
 const (
+	// added by loader
 	Added EventType = iota
+	// expired and removed
 	Expired
+	// removed to ensure capacity
+	Removed
+	// requested by Get or Peek without invoking loader
 	Requested
-	Updated
+	// replaced
+	Replaced
+	// failed load
 	Failed
-	Missed
 )
 
 // Listener interface to ExpiryMap events
@@ -52,7 +60,7 @@ func (lw *ListenerWarapper) Listen(ev EventType, key string, val int, err error)
 func NewExpiryMap[K comparable, V any]() *ExpiryMap[K, V] {
 	var deflt V
 	ret := ExpiryMap[K, V]{
-		backMap:     make(map[K]V),
+		backMap:     *ordered.NewOrderedMap[K, V](),
 		maxCapacity: -1,
 		ttl:         1<<63 - 1,
 		loader:      func(key K) (V, error) { return deflt, errors.New("loader not defined") },
@@ -112,5 +120,5 @@ func (em *ExpiryMap[K, V]) ExpiringAfter() time.Duration {
 
 // Returns length of the map
 func (em *ExpiryMap[K, V]) Len() int {
-	return len(em.backMap)
+	return em.backMap.Len()
 }

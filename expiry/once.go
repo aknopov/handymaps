@@ -27,6 +27,6 @@ func (o *once) doAtomically(f func()) {
 }
 
 func (o *once) unlockWithReset() {
-	o.m.Unlock()
 	atomic.StoreUint32(&o.done, 0)
+	o.m.Unlock()
 }
