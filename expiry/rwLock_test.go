@@ -49,16 +49,29 @@ func TestCanNotWriteLockWithUpgraded(t *testing.T) {
 }
 
 func TestMutipleReadersBeforeReadUpgrade(t *testing.T) {
-	rw := upgradableRWMutex{}
+	timeout := time.After(sleepMs * time.Millisecond)
+	done := make(chan interface{})
 
-	rw.rLock()
-	defer rw.rUnlock()
+	go func() {
+		rw := upgradableRWMutex{}
 
-	rw.rLock()
-	defer rw.rUnlock()
+		rw.rLock()
+		defer rw.rUnlock()
 
-	rw.upgradeRLock()
-	defer rw.upgradableRUnlock()
+		rw.rLock()
+		defer rw.rUnlock()
+
+		rw.upgradeRLock()
+		defer rw.upgradableRUnlock()
+
+		done <- struct{}{}
+	}()
+
+	select {
+	case <-timeout:
+		t.Fatal("Test didn't finish in time")
+	case <-done:
+	}
 }
 
 func TestMutipleReadersAfterReadUpgrade(t *testing.T) {
