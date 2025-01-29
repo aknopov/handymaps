@@ -1,7 +1,9 @@
 package expiry
 
 import (
+	"strconv"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -11,6 +13,7 @@ func TestGet(t *testing.T) {
 
 	em := NewExpiryMap[string, int]().
 		WithMaxCapacity(maxCapacity)
+	// Default loader returns error
 	v, e := em.Get("Hi")
 	assertT.NotNil(e)
 	assertT.Equal(0, v)
@@ -170,6 +173,8 @@ func TestNotifications(t *testing.T) {
 	assertNotification(t, Requested, "Hi", 2, nil, last(events), last(keys), last(vals), last(errs))
 	em.Peek("Hi")
 	assertNotification(t, Requested, "Hi", 2, nil, last(events), last(keys), last(vals), last(errs))
+	em.Peek("Hello")
+	assertNotification(t, Missed, "Hello", 0, nil, last(events), last(keys), last(vals), last(errs))
 
 	_, _ = em.Get("Hello")
 	assertNotification(t, Removed, "Hi", 2, nil, penult(events), penult(keys), penult(vals), penult(errs))
@@ -194,6 +199,52 @@ func TestClear(t *testing.T) {
 	assertT.Equal(0, em.Len())
 }
 
+func TestSingleStart(t *testing.T) {
+	em := NewExpiryMap[string, int]()
+
+	assert.NotPanics(t, func() { em.Start() })
+	assert.Panics(t, func() { em.Start() })
+}
+
 func TestExpiry(t *testing.T) {
-	// UC
+	assertT := assert.New(t)
+
+	ttlE := time.Duration(10) * time.Millisecond
+
+	em := NewExpiryMap[string, int]().
+		WithMaxCapacity(maxCapacity).
+		WithLoader(func(key string) (int, error) { return len(key), nil }).
+		ExpireAfter(ttlE).
+		Start()
+
+	_, _ = em.Get("Hi")
+	assertT.Equal(1, em.Len())
+	assertT.True(em.ContainsKey("Hi"))
+
+	_, _ = em.Get("Hello")
+	assertT.Equal(2, em.Len())
+	assertT.True(em.ContainsKey("Hello"))
+
+	time.Sleep(3 * ttlE)
+	assertT.Equal(0, em.Len())
+
+	_, _ = em.Get("World!")
+	assertT.Equal(1, em.Len())
+	assertT.True(em.ContainsKey("World!"))
+}
+
+func BenchmarkExpiryMap(b *testing.B) {
+	ttlE := time.Duration(10) * time.Millisecond
+	em := NewExpiryMap[string, string]().
+		WithMaxCapacity(Unlimited).
+		WithLoader(func(key string) (string, error) { return "value" + key, nil }).
+		ExpireAfter(ttlE).
+		Start()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		iS := strconv.Itoa(i)
+		_, _ = em.Get(iS)
+		_, _ = em.Get(iS) // <- shouldn't triggert loading
+	}
 }

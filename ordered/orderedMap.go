@@ -30,8 +30,8 @@ func NewOrderedMap[K comparable, V any]() *OrderedMap[K, V] {
 }
 
 // Returns length of the map
-func (sml *OrderedMap[K, V]) Len() int {
-	return len(sml.orderedKeys)
+func (om *OrderedMap[K, V]) Len() int {
+	return len(om.orderedKeys)
 }
 
 // Returns value for the specified key. If key isn't present, returns false inthe second return value.
@@ -57,7 +57,7 @@ func (om *OrderedMap[K, V]) PutAll(other *OrderedMap[K, V]) {
 
 // Removes the mapping for the specified key from this map if present.
 //   - return `true` if value was removed
-func (om *OrderedMap[K, V]) Remove(key K) bool{
+func (om *OrderedMap[K, V]) Remove(key K) bool {
 	var ok bool
 	if _, ok = om.backMap[key]; ok {
 		delete(om.backMap, key)

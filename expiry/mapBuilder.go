@@ -3,20 +3,34 @@ package expiry
 
 import (
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/aknopov/handymaps/ordered"
 )
 
+const (
+	// Expiry value at which eviction is not performed
+	Eternity  = 1<<63 - 1
+	Unlimited = -1
+)
+
+type entry[V any] struct {
+	val    V
+	exptmr *time.Timer
+}
+
 // Implementation of a map which entries expire after certain time.
 type ExpiryMap[K comparable, V any] struct {
-	backMap     ordered.OrderedMap[K, V]
+	backMap     ordered.OrderedMap[K, entry[V]]
 	maxCapacity int
 	ttl         time.Duration
 	loader      func(key K) (V, error)
 	listeners   *set[Listener[K, V]]
-	zeroVal     V
-	once
+	evictChan   chan K
+	stopChan    chan bool
+	started     sync.Mutex
+	upgradableRWMutex
 }
 
 type EventType int
@@ -31,6 +45,8 @@ const (
 	Removed
 	// requested by Get or Peek without invoking loader
 	Requested
+	// Peek didn't yield
+	Missed
 	// replaced
 	Replaced
 	// failed load
@@ -60,49 +76,46 @@ func (lw *ListenerWarapper) Listen(ev EventType, key string, val int, err error)
 func NewExpiryMap[K comparable, V any]() *ExpiryMap[K, V] {
 	var deflt V
 	ret := ExpiryMap[K, V]{
-		backMap:     *ordered.NewOrderedMap[K, V](),
-		maxCapacity: -1,
-		ttl:         1<<63 - 1,
+		backMap:     *ordered.NewOrderedMap[K, entry[V]](),
+		maxCapacity: Unlimited,
+		ttl:         Eternity,
 		loader:      func(key K) (V, error) { return deflt, errors.New("loader not defined") },
 		listeners:   newSet[Listener[K, V]](),
+		evictChan:   make(chan K),
+		stopChan:    make(chan bool),
 	}
 	return &ret
 }
 
 // Modifies max capacity of the map. If adding new entry exceeds map capacity, the oldest entry is evicted.
 func (em *ExpiryMap[K, V]) WithMaxCapacity(maxCapacity int) *ExpiryMap[K, V] {
-	em.doAtomically(func() {
-		em.maxCapacity = maxCapacity
-	})
+	em.maxCapacity = maxCapacity
 	return em
 }
 
 // Modifes map entries time-to-live period
-func (em *ExpiryMap[K, V]) Expirefter(ttl time.Duration) *ExpiryMap[K, V] {
-	em.doAtomically(func() {
-		em.ttl = ttl
-	})
+func (em *ExpiryMap[K, V]) ExpireAfter(ttl time.Duration) *ExpiryMap[K, V] {
+	em.ttl = ttl
 	return em
 }
 
 // Modifes map's loader that provides values for a new  key
 func (em *ExpiryMap[K, V]) WithLoader(loader func(key K) (V, error)) *ExpiryMap[K, V] {
-	em.doAtomically(func() {
-		em.loader = loader
-	})
+	em.loader = loader
 	return em
 }
 
 // Adds listener to ExpiryMap events. The listeners are executed in a synchronous mode in order of their insretion.
 func (em *ExpiryMap[K, V]) AddListener(listener Listener[K, V]) *ExpiryMap[K, V] {
-	em.doAtomically(func() {
+	em.writeAtomically(func() {
 		em.listeners.add(listener)
 	})
 	return em
 }
 
+// Removes listener to ExpiryMap events.
 func (em *ExpiryMap[K, V]) RemoveListener(listener Listener[K, V]) *ExpiryMap[K, V] {
-	em.doAtomically(func() {
+	em.writeAtomically(func() {
 		em.listeners.remove(listener)
 	})
 	return em
@@ -114,11 +127,15 @@ func (em *ExpiryMap[K, V]) Capacity() int {
 }
 
 // Returns expiry period
-func (em *ExpiryMap[K, V]) ExpiringAfter() time.Duration {
+func (em *ExpiryMap[K, V]) ExpireTime() time.Duration {
 	return em.ttl
 }
 
 // Returns length of the map
 func (em *ExpiryMap[K, V]) Len() int {
-	return em.backMap.Len()
+	var size int
+	em.readAtomically(func() {
+		size = em.backMap.Len()
+	})
+	return size
 }

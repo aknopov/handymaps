@@ -10,7 +10,7 @@ import (
 
 const (
 	maxCapacity = 123
-	ttl         = time.Duration(777000000)
+	ttl         = time.Duration(777) * time.Millisecond
 )
 
 func TestCreation(t *testing.T) {
@@ -18,11 +18,11 @@ func TestCreation(t *testing.T) {
 
 	em := NewExpiryMap[string, int]().
 		WithMaxCapacity(maxCapacity).
-		Expirefter(ttl)
+		ExpireAfter(ttl)
 
 	assertT.NotNil(t, em)
 	assertT.Equal(maxCapacity, em.Capacity())
-	assertT.Equal(ttl, em.ExpiringAfter())
+	assertT.Equal(ttl, em.ExpireTime())
 	assertT.NotNil(em.loader)
 	assertT.Equal(0, em.listeners.size())
 }
@@ -32,7 +32,7 @@ func TestLoader(t *testing.T) {
 
 	em := NewExpiryMap[string, int]().
 		WithMaxCapacity(maxCapacity).
-		Expirefter(ttl)
+		ExpireAfter(ttl)
 	orgLoader := em.loader
 	assertT.NotNil(orgLoader)
 
@@ -53,10 +53,10 @@ func TestListeners(t *testing.T) {
 
 	em := NewExpiryMap[string, int]().
 		WithMaxCapacity(maxCapacity).
-		Expirefter(ttl)
+		ExpireAfter(ttl)
 
-	var wrapper1 = ListenerWarapper{f: listener1}
-	var wrapper2 = ListenerWarapper{f: listener2}
+	var wrapper1 = ListenerWarapper{listener1}
+	var wrapper2 = ListenerWarapper{listener2}
 
 	em.AddListener(&wrapper1)
 	assertT.Equal(1, em.listeners.size())
@@ -74,21 +74,4 @@ func TestListeners(t *testing.T) {
 	assertT.Equal(1, em.listeners.size())
 	assertT.False(em.listeners.contains(&wrapper1))
 	assertT.True(em.listeners.contains(&wrapper2))
-}
-
-func TestTimers(t *testing.T) {
-	timer1 := time.NewTimer(2 * time.Second)
-	<-timer1.C
-	fmt.Println("Timer 1 fired")
-
-	timer2 := time.NewTimer(time.Second)
-	go func() {
-		<-timer2.C
-		fmt.Println("Timer 2 fired") // <- Will not see
-	}()
-	stop2 := timer2.Stop()
-	if stop2 {
-		fmt.Println("Timer 2 stopped")
-	}
-	time.Sleep(2500 * time.Millisecond)
 }
