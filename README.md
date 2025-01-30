@@ -1,6 +1,6 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/aknopov/handymaps/go.yml)
-[![Coverage Status](https://coveralls.io/repos/github/aknopov/handymaps/badge.svg?branch=main)](https://coveralls.io/github/aknopov/handymaps?branch=main)
+![Coveralls](https://img.shields.io/coverallsCoverage/github/aknopov/handymaps)
 
 # Handy Maps
 
