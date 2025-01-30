@@ -31,7 +31,14 @@ jobs:
         run: go vet ./...
 
       - name: Build the library
-        run: go build -v ./...
+        run: go build -v -race ./...
 
       - name: Run tests
-        run: go test -v ./...
+        run: go test -v -timeout=60s -race -covermode=atomic -coverprofile=$GITHUB_WORKSPACE/profile.cov ./...
+
+      - name: Submit coverage to Coveralls
+        run: |
+          go install github.com/mattn/goveralls@latest
+          goveralls -service=github -coverprofile=$GITHUB_WORKSPACE/profile.cov
+        env:
+          COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
