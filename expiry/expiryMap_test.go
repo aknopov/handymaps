@@ -8,6 +8,23 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestDiscard(t *testing.T) {
+	assertT := assert.New(t)
+
+	em := NewExpiryMap[string, int]().
+		ExpireAfter(ttl).
+		WithLoader(func(key string) (int, error) { return len(key), nil })
+
+	_, _ = em.Get("Hi")
+	_, _ = em.Get("Hello!")
+	assertT.Equal(2, em.Len())
+
+	em.Discard()
+	assertT.Equal(0, em.Len())
+
+	assertT.Panics(func() { em.Get("Hi") })
+}
+
 func TestGet(t *testing.T) {
 	assertT := assert.New(t)
 
@@ -199,13 +216,6 @@ func TestClear(t *testing.T) {
 	assertT.Equal(0, em.Len())
 }
 
-func TestSingleStart(t *testing.T) {
-	em := NewExpiryMap[string, int]()
-
-	assert.NotPanics(t, func() { em.Start() })
-	assert.Panics(t, func() { em.Start() })
-}
-
 func TestExpiry(t *testing.T) {
 	assertT := assert.New(t)
 
@@ -214,8 +224,7 @@ func TestExpiry(t *testing.T) {
 	em := NewExpiryMap[string, int]().
 		WithMaxCapacity(maxCapacity).
 		WithLoader(func(key string) (int, error) { return len(key), nil }).
-		ExpireAfter(ttlE).
-		Start()
+		ExpireAfter(ttlE)
 
 	_, _ = em.Get("Hi")
 	assertT.Equal(1, em.Len())
@@ -233,13 +242,40 @@ func TestExpiry(t *testing.T) {
 	assertT.True(em.ContainsKey("World!"))
 }
 
+func TestListeners(t *testing.T) {
+	assertT := assert.New(t)
+
+	em := NewExpiryMap[string, int]().
+		WithMaxCapacity(maxCapacity).
+		ExpireAfter(ttl)
+
+	var wrapper1 = ListenerWarapper{listener1}
+	var wrapper2 = ListenerWarapper{listener2}
+
+	em.AddListener(&wrapper1)
+	assertT.Equal(1, em.listeners.size())
+	assertT.True(em.listeners.contains(&wrapper1))
+
+	em.AddListener(&wrapper1)
+	assertT.Equal(1, em.listeners.size())
+	assertT.True(em.listeners.contains(&wrapper1))
+
+	em.AddListener(&wrapper2)
+	assertT.Equal(2, em.listeners.size())
+	assertT.True(em.listeners.contains(&wrapper2))
+
+	em.RemoveListener(&wrapper1)
+	assertT.Equal(1, em.listeners.size())
+	assertT.False(em.listeners.contains(&wrapper1))
+	assertT.True(em.listeners.contains(&wrapper2))
+}
+
 func BenchmarkExpiryMap(b *testing.B) {
 	ttlE := time.Duration(10) * time.Millisecond
 	em := NewExpiryMap[string, string]().
 		WithMaxCapacity(Unlimited).
 		WithLoader(func(key string) (string, error) { return "value" + key, nil }).
-		ExpireAfter(ttlE).
-		Start()
+		ExpireAfter(ttlE)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

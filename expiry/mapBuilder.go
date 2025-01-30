@@ -3,7 +3,6 @@ package expiry
 
 import (
 	"errors"
-	"sync"
 	"time"
 
 	"github.com/aknopov/handymaps/ordered"
@@ -29,7 +28,6 @@ type ExpiryMap[K comparable, V any] struct {
 	listeners   *set[Listener[K, V]]
 	evictChan   chan K
 	stopChan    chan bool
-	started     sync.Mutex
 	upgradableRWMutex
 }
 
@@ -84,6 +82,20 @@ func NewExpiryMap[K comparable, V any]() *ExpiryMap[K, V] {
 		evictChan:   make(chan K),
 		stopChan:    make(chan bool),
 	}
+
+	go func() {
+		for {
+			select {
+			case key := <-ret.evictChan:
+				ret.writeAtomically(func() {
+					ret.removeEntry(key)
+				})
+			case <-ret.stopChan:
+				return
+			}
+		}
+	}()
+
 	return &ret
 }
 
@@ -102,22 +114,6 @@ func (em *ExpiryMap[K, V]) ExpireAfter(ttl time.Duration) *ExpiryMap[K, V] {
 // Modifes map's loader that provides values for a new  key
 func (em *ExpiryMap[K, V]) WithLoader(loader func(key K) (V, error)) *ExpiryMap[K, V] {
 	em.loader = loader
-	return em
-}
-
-// Adds listener to ExpiryMap events. The listeners are executed in a synchronous mode in order of their insretion.
-func (em *ExpiryMap[K, V]) AddListener(listener Listener[K, V]) *ExpiryMap[K, V] {
-	em.writeAtomically(func() {
-		em.listeners.add(listener)
-	})
-	return em
-}
-
-// Removes listener to ExpiryMap events.
-func (em *ExpiryMap[K, V]) RemoveListener(listener Listener[K, V]) *ExpiryMap[K, V] {
-	em.writeAtomically(func() {
-		em.listeners.remove(listener)
-	})
 	return em
 }
 
