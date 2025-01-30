@@ -1,3 +1,7 @@
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/aknopov/handymaps/go.yml)
+![Coveralls](https://img.shields.io/coverallsCoverage/github/aknopov/handymaps)
+
 # Handy Maps
 
 Library contains a number of map collections extending standard implementation
@@ -64,8 +68,8 @@ assert(val == 5)
 assert(expiryMap.Len() == 2)
 val, _ = expiryMap.Get("World!")
 assert(val == 6)
-assert(expiryMap.ContainsKey("Hello"))
 assert(expiryMap.Len() == 2)
+assert(expiryMap.ContainsKey("Hello"))
 assert(!expiryMap.ContainsKey("Hi"))
 
 time.Sleep(100 * time.Millisecond)
