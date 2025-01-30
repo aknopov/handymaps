@@ -1,4 +1,4 @@
-// Package bimap implements bi-directional map with unique sets of keys and values.
+// Package "bimap" implements bi-directional map with unique sets of keys and values.
 // It preserves insertion order while iterating map entries, unless duplicate keys or values were added.
 package bimap
 

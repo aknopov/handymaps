@@ -1,8 +1,8 @@
+// Package "ordered" implements a map with iteration order following insertion order.
+// Iteration order is not affected if a key is inserted repeatedly into the map.
 package ordered
 
-// Implementation of map with predicatable iteration order that follows insertion order.
-//
-// Iteration order is not affected if a key is re-inserted into the map.
+// Map implementation
 type OrderedMap[K comparable, V any] struct {
 	backMap     map[K]V
 	orderedKeys []K
@@ -15,7 +15,7 @@ type OrderedMapIterator[K comparable, V any] struct {
 	idx int
 }
 
-// Creates ordered map with the specified capacity.
+// Creates an ordered map with the specified capacity.
 //   - capacity - initial capacity
 func NewOrderedMapEx[K comparable, V any](capacity int) *OrderedMap[K, V] {
 	return &OrderedMap[K, V]{
@@ -24,17 +24,17 @@ func NewOrderedMapEx[K comparable, V any](capacity int) *OrderedMap[K, V] {
 	}
 }
 
-// Creates zero-sized ordered map.
+// Creates a zero-sized ordered map.
 func NewOrderedMap[K comparable, V any]() *OrderedMap[K, V] {
 	return NewOrderedMapEx[K, V](0)
 }
 
-// Returns length of the map
+// Returns the length of the map.
 func (om *OrderedMap[K, V]) Len() int {
 	return len(om.orderedKeys)
 }
 
-// Returns value for the specified key. If key isn't present, returns false inthe second return value.
+// Returns the value for the specified key. If the key isn't present, returns false in the second return value.
 func (om *OrderedMap[K, V]) Get(key K) (V, bool) {
 	value, ok := om.backMap[key]
 	return value, ok
@@ -56,7 +56,7 @@ func (om *OrderedMap[K, V]) PutAll(other *OrderedMap[K, V]) {
 }
 
 // Removes the mapping for the specified key from this map if present.
-//   - return `true` if value was removed
+//   - returns `true` if the value was removed
 func (om *OrderedMap[K, V]) Remove(key K) bool {
 	var ok bool
 	if _, ok = om.backMap[key]; ok {
@@ -71,7 +71,7 @@ func (om *OrderedMap[K, V]) Remove(key K) bool {
 	return ok
 }
 
-// Computes value for the specified key. If key is not present, compute function received "zero" value.
+// Computes the value for the specified key. If the key is not present, the compute function receives the "zero" value.
 func (om *OrderedMap[K, V]) Compute(key K, compute func(K, V) V) V {
 	value, ok := om.backMap[key]
 	if !ok {
@@ -82,12 +82,12 @@ func (om *OrderedMap[K, V]) Compute(key K, compute func(K, V) V) V {
 	return value
 }
 
-// Returns a list the map keys in the order they were inserted.
+// Returns a list of the map keys in the order they were inserted.
 func (om *OrderedMap[K, V]) Keys() []K {
 	return om.orderedKeys
 }
 
-// Creates iterator for the map.
+// Creates an iterator for the map.
 func (om *OrderedMap[K, V]) Iterator() *OrderedMapIterator[K, V] {
 	return &OrderedMapIterator[K, V]{om: om, idx: 0}
 }

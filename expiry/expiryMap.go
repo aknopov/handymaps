@@ -66,7 +66,7 @@ func (em *ExpiryMap[K, V]) loadValue(key K) (V, error) {
 	val, err := em.loader(key)
 	if err == nil {
 		em.upgradeWLock()
-		for em.maxCapacity != -1 && em.backMap.Len() >= em.maxCapacity {
+		for em.maxCapacity != Unlimited && em.backMap.Len() >= em.maxCapacity {
 			em.removeOldest()
 		}
 		keyTimer := time.NewTimer(em.ttl)

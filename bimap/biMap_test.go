@@ -99,6 +99,23 @@ func TestInverse(t *testing.T) {
 	assertT.Equal("there!", v)
 }
 
+func TestGetKey(t *testing.T) {
+	assertT := assert.New(t)
+
+	aBimap := NewBiMap[string, int]()
+	aBimap.Put("Hello", 1)
+	aBimap.Put("there!", 2)
+
+	v, _ := aBimap.GetKey(1)
+	assertT.Equal("Hello", v)
+	v, _ = aBimap.GetKey(2)
+	assertT.Equal("there!", v)
+
+	v, ok := aBimap.GetKey(3)
+	assertT.False(ok)
+	assertT.Equal("", v)
+}
+
 func TestEquals(t *testing.T) {
 	assertT := assert.New(t)
 
@@ -173,6 +190,15 @@ func TestIterator(t *testing.T) {
 	}
 
 	assertPanic(t, "No panic?", func() { it.Next() })
+}
+
+func TestCompareSlices(t *testing.T) {
+	assertT := assert.New(t)
+
+	assertT.True(cmpSlices([]int{1, 2, 3}, []int{1, 2, 3}))
+	assertT.False(cmpSlices([]int{1, 2, 3}, []int{1, 2, 4}))
+	assertT.False(cmpSlices([]int{1, 2, 3}, []int{1, 2}))
+	assertT.False(cmpSlices([]int{1, 2, 3}, []int{1, 2, 3, 4}))
 }
 
 const nCount = 1000

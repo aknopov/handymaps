@@ -54,7 +54,7 @@ See more detals in [ExpiryMap documentation](./expiry/EXPIRYMAP.md)
 
 Example:
 ```go
-import "github.com/aknopov/handymaps/sorted"
+import "github.com/aknopov/handymaps/expiry"
 
 expiryMap := expiry.NewExpiryMap[string, int]().
     WithLoader(func(key string) (int, error) { return len(key), nil }).

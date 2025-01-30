@@ -40,14 +40,15 @@ func (rw *upgradableRWMutex) writeAtomically(f func()) {
 	f()
 }
 
-// Locks for reading while executing function allowing write upgrade
+// Locks first for reading function execution allowing optional lock upgrade
+// with `upgradableRWMutex.upgradeWLock` at some later time
 func (rw *upgradableRWMutex) maybeLockForWriting(f func()) {
 	rw.upgradeRLock()
 	defer rw.upgradableRUnlock()
 	f()
 }
 
-// -- Ungradable functionality ---
+// -- Upgradable functionality ---
 
 // First, resolve competition with other writers.
 // Disallow writers to acquire the lock
@@ -67,7 +68,7 @@ func (rw *upgradableRWMutex) upgradeWLock() {
 	}
 }
 
-// Undoes upgrade of r-locks to
+// Undoes upgrade of r-locks and unlocksthe R-lock
 func (rw *upgradableRWMutex) upgradableRUnlock() {
 	rw.upgradedRead = false
 	if rw.upgraded {
@@ -78,7 +79,7 @@ func (rw *upgradableRWMutex) upgradableRUnlock() {
 	}
 }
 
-// -- Standard functionality (no racing checks though) ---
+// -- Standard functionality of `sync.RWMutex` (no racing checks though) --
 
 // Locks rw for writing - standard implementation.
 func (rw *upgradableRWMutex) lock() {

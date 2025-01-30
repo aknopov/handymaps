@@ -1,5 +1,7 @@
 github.com/aknopov/handymaps v0.0.0-20250101174727-4388d082ba30 h1:7anLk0Ql4+OXi05sT9In7pW86i/Uyv6SRd88e2B6n/c=
 github.com/aknopov/handymaps v0.0.0-20250101174727-4388d082ba30/go.mod h1:xG+b4uoH3O4Fn11D8VThQy4mjQgwjtBLpclcBv+chD0=
+github.com/aknopov/handymaps v0.0.3 h1:ReYlX2RlidEVdVmX+zAl9VtZxraio1Mdo1gFGCcpsS0=
+github.com/aknopov/handymaps v0.0.3/go.mod h1:xG+b4uoH3O4Fn11D8VThQy4mjQgwjtBLpclcBv+chD0=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
