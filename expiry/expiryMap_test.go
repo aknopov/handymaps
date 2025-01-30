@@ -22,7 +22,7 @@ func TestDiscard(t *testing.T) {
 	em.Discard()
 	assertT.Equal(0, em.Len())
 
-	assertT.Panics(func() { em.Get("Hi") })
+	assertT.Panics(func() { _, _ = em.Get("Hi") })
 }
 
 func TestGet(t *testing.T) {

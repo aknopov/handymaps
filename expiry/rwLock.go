@@ -53,17 +53,11 @@ func (rw *upgradableRWMutex) maybeLockForWriting(f func()) {
 // Disallow writers to acquire the lock
 func (rw *upgradableRWMutex) upgradeRLock() {
 	rw.w.Lock()
-	if rw.readerCount.Load() < 0 {
-		panic("reader count can not be negative. We have the write lock")
-	}
 	rw.upgradedRead = true
 }
 
 // Upgrade current R-locks to W-lock
 func (rw *upgradableRWMutex) upgradeWLock() {
-	if !rw.upgradedRead {
-		panic("Upgrade outside of upgradableReadLock not allowed")
-	}
 	rw.upgraded = true
 	// Announce to readers there is a pending writer.
 	r := rw.readerCount.Add(-rwmutexMaxReaders) + rwmutexMaxReaders
@@ -102,9 +96,6 @@ func (rw *upgradableRWMutex) lock() {
 func (rw *upgradableRWMutex) unlock() {
 	// Announce to readers there is no active writer.
 	r := rw.readerCount.Add(rwmutexMaxReaders)
-	if r >= rwmutexMaxReaders {
-		panic("Unlock of unlocked upgradableRWMutex")
-	}
 	// Unblock blocked readers, if any.
 	for i := 0; i < int(r); i++ {
 		semaphoreRelease(&rw.readerSem, false, 0)
@@ -124,9 +115,6 @@ func (rw *upgradableRWMutex) rLock() {
 // Undoes a single rLock call - standard implementation
 func (rw *upgradableRWMutex) rUnlock() {
 	if r := rw.readerCount.Add(-1); r < 0 {
-		if r+1 == 0 || r+1 == -rwmutexMaxReaders {
-			panic("All locks of upgradableRWMutex are relased!")
-		}
 		// Outlined slow-path to allow the fast-path to be inlined
 		// A writer is pending.
 		if rw.readerWait.Add(-1) == 0 {
