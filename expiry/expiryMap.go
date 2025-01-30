@@ -156,7 +156,7 @@ func (em *ExpiryMap[K, V]) Clear() {
 func (em *ExpiryMap[K, V]) AddListener(listener Listener[K, V]) *ExpiryMap[K, V] {
 	em.assumeAlive()
 
-	em.writeAtomically(func() {
+	em.readAtomically(func() {
 		em.listeners.add(listener)
 	})
 	return em
@@ -166,7 +166,7 @@ func (em *ExpiryMap[K, V]) AddListener(listener Listener[K, V]) *ExpiryMap[K, V]
 func (em *ExpiryMap[K, V]) RemoveListener(listener Listener[K, V]) *ExpiryMap[K, V] {
 	em.assumeAlive()
 
-	em.writeAtomically(func() {
+	em.readAtomically(func() {
 		em.listeners.remove(listener)
 	})
 	return em

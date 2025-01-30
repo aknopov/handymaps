@@ -44,11 +44,11 @@ fmt.Println(sMap.Keys())
 Output - `[101 104 108 111]`
 
 ## ExpiryMap
-Implementation of a read-through cache where entries expire after a certain period of time.  The code is thread-safe.
-The default implementation does not expire entries and has unlimited capacity. Both parameters can be customized to reach full functionality.
-It requires a user-defined load function to provide a value based on a key. Expired entries are removed asynchronously.
-Implementing the `Listener` interface allows tracking of map events such as adding, removing, peeking, missing entries and load failures.
-Example of use:
+
+ExpiryMap is a read-through cache where entries expire after a certain period of time. Implementation is thread-safe with atomic methods of interface.
+See more detals in [ExpiryMap documentation](./expiry/EXPIRYMAP.md)
+
+Example:
 ```go
 import "github.com/aknopov/handymaps/sorted"
 
@@ -66,6 +66,7 @@ val, _ = expiryMap.Get("World!")
 assert(val == 6)
 assert(expiryMap.ContainsKey("Hello"))
 assert(expiryMap.Len() == 2)
+assert(!expiryMap.ContainsKey("Hi"))
 
 time.Sleep(100 * time.Millisecond)
 assert(expiryMap.Len() == 0)
