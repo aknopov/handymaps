@@ -42,3 +42,32 @@ for _, c := range "hello" {
 fmt.Println(sMap.Keys())
 ```
 Output - `[101 104 108 111]`
+
+## ExpiryMap
+
+ExpiryMap is a read-through cache where entries expire after a certain period of time. Implementation is thread-safe with atomic methods of interface.
+See more detals in [ExpiryMap documentation](./expiry/EXPIRYMAP.md)
+
+Example:
+```go
+import "github.com/aknopov/handymaps/sorted"
+
+expiryMap := expiry.NewExpiryMap[string, int]().
+    WithLoader(func(key string) (int, error) { return len(key), nil }).
+    WithMaxCapacity(2).
+    ExpireAfter(50 * time.Millisecond)
+
+val, _ = expiryMap.Get("Hi")
+assert(val == 2)
+val, _ = expiryMap.Get("Hello")
+assert(val == 5)
+assert(expiryMap.Len() == 2)
+val, _ = expiryMap.Get("World!")
+assert(val == 6)
+assert(expiryMap.ContainsKey("Hello"))
+assert(expiryMap.Len() == 2)
+assert(!expiryMap.ContainsKey("Hi"))
+
+time.Sleep(100 * time.Millisecond)
+assert(expiryMap.Len() == 0)
+```

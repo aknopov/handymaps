@@ -122,7 +122,7 @@ func TestRemove(t *testing.T) {
 	om.Put("b", 2)
 	om.Put("c", 3)
 
-	om.Remove("b")
+	assertT.True(om.Remove("b"))
 	assertT.Equal(2, om.Len())
 	_, ok := om.Get("b")
 	assertT.False(ok)
@@ -131,7 +131,7 @@ func TestRemove(t *testing.T) {
 	_, ok = om.Get("c")
 	assertT.True(ok)
 
-	om.Remove("z")
+	assertT.False(om.Remove("z"))
 	assertT.Equal(2, om.Len())
 	_, ok = om.Get("a")
 	assertT.True(ok)
