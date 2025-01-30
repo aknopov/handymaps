@@ -37,8 +37,7 @@ jobs:
         run: go test -v -timeout=60s -race -covermode=atomic -coverprofile=$GITHUB_WORKSPACE/profile.cov ./...
 
       - name: Submit coverage to Coveralls
-        run: |
-          go install github.com/mattn/goveralls@latest
-          goveralls -service=github -coverprofile=$GITHUB_WORKSPACE/profile.cov
-        env:
-          COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          file: $GITHUB_WORKSPACE/profile.cov
