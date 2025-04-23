@@ -25,7 +25,7 @@ func TestCreation(t *testing.T) {
 	assertT.Equal(maxCapacity, em.Capacity())
 	assertT.Equal(ttl, em.ExpireTime())
 	assertT.NotNil(em.loader)
-	assertT.Equal(0, em.listeners.size())
+	assertT.Equal(0, em.listeners.Size())
 }
 
 func TestLoader(t *testing.T) {

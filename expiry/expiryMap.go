@@ -5,7 +5,7 @@ import (
 )
 
 func (em *ExpiryMap[K, V]) notifyListeners(ev EventType, key K, val V, err error) {
-	for f := range em.listeners.m {
+	for f := range em.listeners.Enum() {
 		f.Listen(ev, key, val, err)
 	}
 }
@@ -38,7 +38,7 @@ func (em *ExpiryMap[K, V]) Discard() {
 	em.assumeAlive()
 
 	em.Clear()
-	em.writeAtomically(func() {
+	em.WriteAtomically(func() {
 		em.stopChan <- true
 		close(em.evictChan)
 		em.evictChan = nil
@@ -51,7 +51,7 @@ func (em *ExpiryMap[K, V]) Get(key K) (V, error) {
 
 	var err error
 	var val V
-	em.maybeLockForWriting(func() {
+	em.MaybeLockForWriting(func() {
 		if ent, ok := em.backMap.Get(key); !ok {
 			val, err = em.loadValue(key)
 		} else {
@@ -65,7 +65,7 @@ func (em *ExpiryMap[K, V]) Get(key K) (V, error) {
 func (em *ExpiryMap[K, V]) loadValue(key K) (V, error) {
 	val, err := em.loader(key)
 	if err == nil {
-		em.upgradeWLock()
+		em.UpgradeWLock()
 		for em.maxCapacity != Unlimited && em.backMap.Len() >= em.maxCapacity {
 			em.removeOldest()
 		}
@@ -88,7 +88,7 @@ func (em *ExpiryMap[K, V]) Peek(key K) (V, bool) {
 
 	var ent entry[V]
 	var ok bool
-	em.readAtomically(func() {
+	em.ReadAtomically(func() {
 		ent, ok = em.backMap.Get(key)
 		if ok {
 			em.notifyListeners(Requested, key, ent.val, nil)
@@ -104,7 +104,7 @@ func (em *ExpiryMap[K, V]) ContainsKey(key K) bool {
 	em.assumeAlive()
 
 	var ok bool
-	em.readAtomically(func() {
+	em.ReadAtomically(func() {
 		_, ok = em.backMap.Get(key)
 	})
 	return ok
@@ -117,7 +117,7 @@ func (em *ExpiryMap[K, V]) Replace(key K, val V) bool {
 	em.assumeAlive()
 
 	var ok bool
-	em.readAtomically(func() {
+	em.ReadAtomically(func() {
 		if ent, oki := em.backMap.Get(key); oki {
 			em.backMap.Put(key, entry[V]{val: val, exptmr: ent.exptmr})
 			em.notifyListeners(Replaced, key, val, nil)
@@ -134,7 +134,7 @@ func (em *ExpiryMap[K, V]) Remove(key K) bool {
 	em.assumeAlive()
 
 	var ok bool
-	em.readAtomically(func() {
+	em.ReadAtomically(func() {
 		ok = em.removeEntry(key)
 	})
 	return ok
@@ -144,7 +144,7 @@ func (em *ExpiryMap[K, V]) Remove(key K) bool {
 func (em *ExpiryMap[K, V]) Clear() {
 	em.assumeAlive()
 
-	em.writeAtomically(func() {
+	em.WriteAtomically(func() {
 		keys := em.backMap.Keys()
 		for _, key := range keys {
 			em.removeEntry(key)
@@ -156,8 +156,8 @@ func (em *ExpiryMap[K, V]) Clear() {
 func (em *ExpiryMap[K, V]) AddListener(listener Listener[K, V]) *ExpiryMap[K, V] {
 	em.assumeAlive()
 
-	em.readAtomically(func() {
-		em.listeners.add(listener)
+	em.ReadAtomically(func() {
+		em.listeners.Add(listener)
 	})
 	return em
 }
@@ -166,8 +166,8 @@ func (em *ExpiryMap[K, V]) AddListener(listener Listener[K, V]) *ExpiryMap[K, V]
 func (em *ExpiryMap[K, V]) RemoveListener(listener Listener[K, V]) *ExpiryMap[K, V] {
 	em.assumeAlive()
 
-	em.readAtomically(func() {
-		em.listeners.remove(listener)
+	em.ReadAtomically(func() {
+		em.listeners.Remove(listener)
 	})
 	return em
 }
