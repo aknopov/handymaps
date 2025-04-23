@@ -5,7 +5,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/aknopov/handymaps/pkg/ordered"
+	"github.com/aknopov/handymaps/internal/util"
+	"github.com/aknopov/handymaps/ordered"
 )
 
 const (
@@ -25,10 +26,10 @@ type ExpiryMap[K comparable, V any] struct {
 	maxCapacity int
 	ttl         time.Duration
 	loader      func(key K) (V, error)
-	listeners   *set[Listener[K, V]]
+	listeners   *util.Set[Listener[K, V]]
 	evictChan   chan K
 	stopChan    chan bool
-	upgradableRWMutex
+	util.UpgradableRWMutex
 }
 
 type EventType int
@@ -78,7 +79,7 @@ func NewExpiryMap[K comparable, V any]() *ExpiryMap[K, V] {
 		maxCapacity: Unlimited,
 		ttl:         Eternity,
 		loader:      func(key K) (V, error) { return deflt, errors.New("loader not defined") },
-		listeners:   newSet[Listener[K, V]](),
+		listeners:   util.NewSet[Listener[K, V]](),
 		evictChan:   make(chan K),
 		stopChan:    make(chan bool),
 	}
@@ -87,7 +88,7 @@ func NewExpiryMap[K comparable, V any]() *ExpiryMap[K, V] {
 		for {
 			select {
 			case key := <-ret.evictChan:
-				ret.writeAtomically(func() {
+				ret.WriteAtomically(func() {
 					ret.removeEntry(key)
 				})
 			case <-ret.stopChan:
@@ -130,7 +131,7 @@ func (em *ExpiryMap[K, V]) ExpireTime() time.Duration {
 // Returns length of the map
 func (em *ExpiryMap[K, V]) Len() int {
 	var size int
-	em.readAtomically(func() {
+	em.ReadAtomically(func() {
 		size = em.backMap.Len()
 	})
 	return size

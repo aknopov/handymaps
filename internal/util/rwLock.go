@@ -1,4 +1,4 @@
-package expiry
+package util
 
 import (
 	"sync"
@@ -7,7 +7,7 @@ import (
 )
 
 // "Upgradable" R/W lock "inspired" by https://upstash.com/blog/upgradable-rwlock-for-go
-type upgradableRWMutex struct {
+type UpgradableRWMutex struct {
 	w            sync.Mutex   // held if there are pending writers
 	writerSem    uint32       // semaphore for writers to wait for completing readers
 	readerSem    uint32       // semaphore for readers to wait for completing writers
@@ -28,13 +28,13 @@ const rwmutexMaxReaders = 1 << 30
 // -- Convenience wrappers ---
 
 // Locks for reading while executing function
-func (rw *upgradableRWMutex) readAtomically(f func()) {
+func (rw *UpgradableRWMutex) ReadAtomically(f func()) {
 	rw.rLock()
 	defer rw.rUnlock()
 	f()
 }
 
-func (rw *upgradableRWMutex) writeAtomically(f func()) {
+func (rw *UpgradableRWMutex) WriteAtomically(f func()) {
 	rw.lock()
 	defer rw.unlock()
 	f()
@@ -42,9 +42,9 @@ func (rw *upgradableRWMutex) writeAtomically(f func()) {
 
 // Locks first for reading function execution allowing optional lock upgrade
 // with `upgradableRWMutex.upgradeWLock` at some later time
-func (rw *upgradableRWMutex) maybeLockForWriting(f func()) {
+func (rw *UpgradableRWMutex) MaybeLockForWriting(f func()) {
 	rw.upgradeRLock()
-	defer rw.upgradableRUnlock()
+	defer rw.UpgradableRUnlock()
 	f()
 }
 
@@ -52,13 +52,13 @@ func (rw *upgradableRWMutex) maybeLockForWriting(f func()) {
 
 // First, resolve competition with other writers.
 // Disallow writers to acquire the lock
-func (rw *upgradableRWMutex) upgradeRLock() {
+func (rw *UpgradableRWMutex) upgradeRLock() {
 	rw.w.Lock()
 	rw.upgradedRead = true
 }
 
 // Upgrade current R-locks to W-lock
-func (rw *upgradableRWMutex) upgradeWLock() {
+func (rw *UpgradableRWMutex) UpgradeWLock() {
 	rw.upgraded = true
 	// Announce to readers there is a pending writer.
 	r := rw.readerCount.Add(-rwmutexMaxReaders) + rwmutexMaxReaders
@@ -69,7 +69,7 @@ func (rw *upgradableRWMutex) upgradeWLock() {
 }
 
 // Undoes upgrade of r-locks and unlocksthe R-lock
-func (rw *upgradableRWMutex) upgradableRUnlock() {
+func (rw *UpgradableRWMutex) UpgradableRUnlock() {
 	rw.upgradedRead = false
 	if rw.upgraded {
 		rw.upgraded = false
@@ -82,7 +82,7 @@ func (rw *upgradableRWMutex) upgradableRUnlock() {
 // -- Standard functionality of `sync.RWMutex` (no racing checks though) --
 
 // Locks rw for writing - standard implementation.
-func (rw *upgradableRWMutex) lock() {
+func (rw *UpgradableRWMutex) lock() {
 	// First, resolve competition with other writers.
 	rw.w.Lock()
 	// Announce to readers there is a pending writer.
@@ -94,7 +94,7 @@ func (rw *upgradableRWMutex) lock() {
 }
 
 // Unlocks the lock for writing - standard implementation.
-func (rw *upgradableRWMutex) unlock() {
+func (rw *UpgradableRWMutex) unlock() {
 	// Announce to readers there is no active writer.
 	r := rw.readerCount.Add(rwmutexMaxReaders)
 	// Unblock blocked readers, if any.
@@ -106,7 +106,7 @@ func (rw *upgradableRWMutex) unlock() {
 }
 
 // Locks for reading - standard implementation
-func (rw *upgradableRWMutex) rLock() {
+func (rw *UpgradableRWMutex) rLock() {
 	if rw.readerCount.Add(1) < 0 {
 		// A writer is pending, wait for it.
 		semaphoreAcquire(&rw.readerSem)
@@ -114,7 +114,7 @@ func (rw *upgradableRWMutex) rLock() {
 }
 
 // Undoes a single rLock call - standard implementation
-func (rw *upgradableRWMutex) rUnlock() {
+func (rw *UpgradableRWMutex) rUnlock() {
 	if r := rw.readerCount.Add(-1); r < 0 {
 		// Outlined slow-path to allow the fast-path to be inlined
 		// A writer is pending.
