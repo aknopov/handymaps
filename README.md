@@ -1,6 +1,7 @@
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/aknopov/handymaps/go.yml)
 ![Coveralls](https://img.shields.io/coverallsCoverage/github/aknopov/handymaps)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Go Reference](https://pkg.go.dev/badge/google.golang.org/handymaps.svg)](https://pkg.go.dev/github.com/aknopov/handymaps)
 
 # Handy Maps
 
