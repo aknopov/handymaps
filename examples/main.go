@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/aknopov/handymaps/bimap"
-	"github.com/aknopov/handymaps/expiry"
-	"github.com/aknopov/handymaps/ordered"
-	"github.com/aknopov/handymaps/sorted"
+	"github.com/aknopov/handymaps/pkg/bimap"
+	"github.com/aknopov/handymaps/pkg/expiry"
+	"github.com/aknopov/handymaps/pkg/ordered"
+	"github.com/aknopov/handymaps/pkg/sorted"
 )
 
 func main() {

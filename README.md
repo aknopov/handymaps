@@ -50,11 +50,11 @@ Output - `[101 104 108 111]`
 ## ExpiryMap
 
 ExpiryMap is a read-through cache where entries expire after a certain period of time. Implementation is thread-safe with atomic methods of interface.
-See more detals in [ExpiryMap documentation](./expiry/EXPIRYMAP.md)
+See more detals in [ExpiryMap documentation](./pkg/expiry/EXPIRYMAP.md)
 
 Example:
 ```go
-import "github.com/aknopov/handymaps/expiry"
+import "github.com/aknopov/handymaps/pkg/expiry"
 
 expiryMap := expiry.NewExpiryMap[string, int]().
     WithLoader(func(key string) (int, error) { return len(key), nil }).
