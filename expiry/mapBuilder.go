@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/aknopov/handymaps/pkg/ordered"
+	"github.com/aknopov/handymaps/ordered"
 )
 
 const (
