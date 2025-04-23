@@ -28,3 +28,18 @@ func TestSet(t *testing.T) {
 	assertT.False(s.Contains("Hello"))
 	assertT.True(s.Contains("World"))
 }
+
+func TestEnum(t *testing.T) {
+	assertT := assert.New(t)
+
+	s := NewSet[string]()
+	s.Add("Hello")
+	s.Add("World")
+
+	words := make([]string, 0)
+	for e := range s.Enum() {
+		words = append(words, e)
+	}
+
+	assertT.ElementsMatch([]string{"Hello", "World"}, words)
+}

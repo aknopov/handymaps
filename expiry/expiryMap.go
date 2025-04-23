@@ -5,7 +5,7 @@ import (
 )
 
 func (em *ExpiryMap[K, V]) notifyListeners(ev EventType, key K, val V, err error) {
-	for f := range em.listeners.Base() {
+	for f := range em.listeners.Enum() {
 		f.Listen(ev, key, val, err)
 	}
 }

@@ -9,7 +9,7 @@ func NewSet[T comparable]() *Set[T] {
 	return &Set[T]{m: make(map[T]struct{})}
 }
 
-func (s *Set[T]) Base() map[T]struct{} {
+func (s *Set[T]) Enum() map[T]struct{} {
 	return s.m
 }
 
