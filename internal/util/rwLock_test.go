@@ -1,4 +1,4 @@
-package expiry
+package util
 
 import (
 	"fmt"
@@ -20,11 +20,11 @@ func TestNoUpgradeWithWriteLock(t *testing.T) {
 	assertT := assert.New(t)
 
 	c := atomic.Int32{}
-	rw := upgradableRWMutex{}
+	rw := UpgradableRWMutex{}
 	rw.lock()
 	go func() {
 		rw.upgradeRLock()
-		defer rw.upgradableRUnlock()
+		defer rw.UpgradableRUnlock()
 		c.Add(1)
 	}()
 	time.Sleep(sleepMs * time.Millisecond)
@@ -36,10 +36,10 @@ func TestCanNotWriteLockWithUpgraded(t *testing.T) {
 	assertT := assert.New(t)
 
 	c := atomic.Int32{}
-	rw := upgradableRWMutex{}
+	rw := UpgradableRWMutex{}
 	rw.upgradeRLock()
 
-	rw.upgradeWLock()
+	rw.UpgradeWLock()
 	go func() {
 		rw.lock()
 		defer rw.unlock()
@@ -47,7 +47,7 @@ func TestCanNotWriteLockWithUpgraded(t *testing.T) {
 	}()
 	time.Sleep(sleepMs * time.Millisecond)
 	assertT.Equal(int32(0), c.Load())
-	rw.upgradableRUnlock()
+	rw.UpgradableRUnlock()
 }
 
 func TestMutipleReadersBeforeReadUpgrade(t *testing.T) {
@@ -55,7 +55,7 @@ func TestMutipleReadersBeforeReadUpgrade(t *testing.T) {
 	done := make(chan interface{})
 
 	go func() {
-		rw := upgradableRWMutex{}
+		rw := UpgradableRWMutex{}
 
 		rw.rLock()
 		defer rw.rUnlock()
@@ -64,7 +64,7 @@ func TestMutipleReadersBeforeReadUpgrade(t *testing.T) {
 		defer rw.rUnlock()
 
 		rw.upgradeRLock()
-		defer rw.upgradableRUnlock()
+		defer rw.UpgradableRUnlock()
 
 		done <- struct{}{}
 	}()
@@ -77,7 +77,7 @@ func TestMutipleReadersBeforeReadUpgrade(t *testing.T) {
 }
 
 func TestMutipleReadersAfterReadUpgrade(t *testing.T) {
-	rw := upgradableRWMutex{}
+	rw := UpgradableRWMutex{}
 	rw.upgradeRLock()
 
 	waitGroup := sync.WaitGroup{}
@@ -90,17 +90,17 @@ func TestMutipleReadersAfterReadUpgrade(t *testing.T) {
 		}()
 	}
 	waitGroup.Wait()
-	rw.upgradableRUnlock()
+	rw.UpgradableRUnlock()
 }
 
 func TestNoReadsAfterUpgrade(t *testing.T) {
 	assertT := assert.New(t)
 
 	c := atomic.Int32{}
-	rw := upgradableRWMutex{}
+	rw := UpgradableRWMutex{}
 	rw.upgradeRLock()
 
-	rw.upgradeWLock()
+	rw.UpgradeWLock()
 	go func() {
 		rw.rLock()
 		defer rw.rUnlock()
@@ -108,14 +108,14 @@ func TestNoReadsAfterUpgrade(t *testing.T) {
 	}()
 	time.Sleep(sleepMs * time.Millisecond)
 	assertT.Equal(int32(0), c.Load())
-	rw.upgradableRUnlock()
+	rw.UpgradableRUnlock()
 }
 
 func TestNoDoubleUpgrade(t *testing.T) {
 	assertT := assert.New(t)
 
 	c := atomic.Int32{}
-	rw := upgradableRWMutex{}
+	rw := UpgradableRWMutex{}
 
 	rw.rLock()
 	defer rw.rUnlock()
@@ -126,21 +126,21 @@ func TestNoDoubleUpgrade(t *testing.T) {
 	rw.upgradeRLock()
 	go func() {
 		rw.upgradeRLock()
-		defer rw.upgradableRUnlock()
+		defer rw.UpgradableRUnlock()
 		c.Add(1)
 	}()
 	time.Sleep(sleepMs * time.Millisecond)
 	assertT.Equal(int32(0), c.Load())
-	rw.upgradableRUnlock()
+	rw.UpgradableRUnlock()
 }
 
 func TestReadAtomically(t *testing.T) {
-	rw := upgradableRWMutex{}
+	rw := UpgradableRWMutex{}
 
 	waitGroup := sync.WaitGroup{}
 	for i := 0; i < iters; i++ {
 		waitGroup.Add(1)
-		go rw.readAtomically(func() {
+		go rw.ReadAtomically(func() {
 			waitGroup.Done()
 		})
 	}
@@ -151,12 +151,12 @@ func TestWriteAtomically(t *testing.T) {
 	assertT := assert.New(t)
 
 	c := 0 // Da - simple var!
-	rw := upgradableRWMutex{}
+	rw := UpgradableRWMutex{}
 
 	waitGroup := sync.WaitGroup{}
 	for i := 0; i < iters; i++ {
 		waitGroup.Add(1)
-		go rw.writeAtomically(func() {
+		go rw.WriteAtomically(func() {
 			c++
 			waitGroup.Done()
 		})
@@ -169,10 +169,10 @@ func TestMaybeLockForWriting(t *testing.T) {
 	assertT := assert.New(t)
 
 	c := 0 // Da - simple var!
-	rw := upgradableRWMutex{}
+	rw := UpgradableRWMutex{}
 
-	rw.maybeLockForWriting(func() {
-		rw.upgradeWLock()
+	rw.MaybeLockForWriting(func() {
+		rw.UpgradeWLock()
 		c = 1
 	})
 
@@ -181,7 +181,7 @@ func TestMaybeLockForWriting(t *testing.T) {
 
 // Tests from https://go.dev/src/sync/rwmutex_test.go
 
-func parallelReader(m *upgradableRWMutex, clocked, cunlock, cdone chan bool) {
+func parallelReader(m *UpgradableRWMutex, clocked, cunlock, cdone chan bool) {
 	m.rLock()
 	clocked <- true
 	<-cunlock
@@ -191,7 +191,7 @@ func parallelReader(m *upgradableRWMutex, clocked, cunlock, cdone chan bool) {
 
 func doTestParallelReaders(numReaders, gomaxprocs int) {
 	runtime.GOMAXPROCS(gomaxprocs)
-	var m upgradableRWMutex
+	var m UpgradableRWMutex
 	clocked := make(chan bool)
 	cunlock := make(chan bool)
 	cdone := make(chan bool)
@@ -218,7 +218,7 @@ func TestParallelReaders(t *testing.T) {
 	doTestParallelReaders(4, 2)
 }
 
-func reader(rwm *upgradableRWMutex, num_iterations int, activity *int32, cdone chan bool) {
+func reader(rwm *UpgradableRWMutex, num_iterations int, activity *int32, cdone chan bool) {
 	for i := 0; i < num_iterations; i++ {
 		rwm.rLock()
 		n := atomic.AddInt32(activity, 1)
@@ -234,7 +234,7 @@ func reader(rwm *upgradableRWMutex, num_iterations int, activity *int32, cdone c
 	cdone <- true
 }
 
-func writer(rwm *upgradableRWMutex, num_iterations int, activity *int32, cdone chan bool) {
+func writer(rwm *UpgradableRWMutex, num_iterations int, activity *int32, cdone chan bool) {
 	for i := 0; i < num_iterations; i++ {
 		rwm.lock()
 		n := atomic.AddInt32(activity, 10000)
@@ -254,7 +254,7 @@ func HammerRWMutex(gomaxprocs, numReaders, num_iterations int) {
 	runtime.GOMAXPROCS(gomaxprocs)
 	// Number of active readers + 10000 * number of active writers.
 	var activity int32
-	var rwm upgradableRWMutex
+	var rwm UpgradableRWMutex
 	cdone := make(chan bool)
 	go writer(&rwm, num_iterations, &activity, cdone)
 	var i int

@@ -253,21 +253,21 @@ func TestListeners(t *testing.T) {
 	var wrapper2 = ListenerWarapper{listener2}
 
 	em.AddListener(&wrapper1)
-	assertT.Equal(1, em.listeners.size())
-	assertT.True(em.listeners.contains(&wrapper1))
+	assertT.Equal(1, em.listeners.Size())
+	assertT.True(em.listeners.Contains(&wrapper1))
 
 	em.AddListener(&wrapper1)
-	assertT.Equal(1, em.listeners.size())
-	assertT.True(em.listeners.contains(&wrapper1))
+	assertT.Equal(1, em.listeners.Size())
+	assertT.True(em.listeners.Contains(&wrapper1))
 
 	em.AddListener(&wrapper2)
-	assertT.Equal(2, em.listeners.size())
-	assertT.True(em.listeners.contains(&wrapper2))
+	assertT.Equal(2, em.listeners.Size())
+	assertT.True(em.listeners.Contains(&wrapper2))
 
 	em.RemoveListener(&wrapper1)
-	assertT.Equal(1, em.listeners.size())
-	assertT.False(em.listeners.contains(&wrapper1))
-	assertT.True(em.listeners.contains(&wrapper2))
+	assertT.Equal(1, em.listeners.Size())
+	assertT.False(em.listeners.Contains(&wrapper1))
+	assertT.True(em.listeners.Contains(&wrapper2))
 }
 
 func BenchmarkExpiryMap(b *testing.B) {
